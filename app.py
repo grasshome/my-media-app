@@ -125,20 +125,27 @@ def main():
             with col1:
                 title = st.text_input("标题/番号")
             with col2:
-                category = st.selectbox("分类", ["刘备", "本子", "网黄", "ASMR", "AV", "COS", "L2D", "VAM"])
+                # 👇 这里记得保留你之前改好的分类（网黄、VAM那些）
+                category = st.selectbox("分类", ["刘备", "ASMR", "AV", "本子", "动画", "VAM", "l2d", "网黄"])
             
-            # 评分滑块
             rating = st.slider("评分", 0.0, 10.0, 7.5, 0.5)
-            
             tags = st.text_input("标签 (空格分隔)")
             review = st.text_area("短评", height=100)
 
-            # 👇 【关键逻辑】如果评分 >= 8.0，显示文件上传框
-            uploaded_file = None
+            # --- 👇 V4.0 新增逻辑开始 ---
+            st.markdown("---")
+            st.write("📂 **资源挂载 (二选一)**")
+            
+            # 方式 A: 直接上传 (适合图片/Epub/小文件)
+            uploaded_file = st.file_uploader("方式A: 直接上传文件 (限小文件)", type=None)
+            
+            # 方式 B: 手动粘贴链接 (适合大文件/PDF/视频)
+            manual_link = st.text_input("方式B: 手动粘贴 Google Drive 链接 (大文件推荐)")
+            
+            # 提示语
             if rating >= 8.0:
-                st.markdown("---")
-                st.info("🌟 **高分作品判定！** 可以上传资源文件 (Zip/PDF/Audio/图片)")
-                uploaded_file = st.file_uploader("选择文件上传 (将保存到 Google Drive)")
+                st.caption("🌟 高分推荐：如果是大文件，建议使用 Google Drive App 上传后粘贴链接到上方。")
+            # --- 👆 V4.0 新增逻辑结束 ---
 
             submitted = st.form_submit_button("保存到云端")
             
@@ -147,22 +154,29 @@ def main():
                     st.warning("标题不能为空")
                 else:
                     with st.spinner("正在处理..."):
-                        file_link = ""
-                        # 1. 如果有文件，先上传文件
+                        final_link = ""
+                        
+                        # 逻辑判断：优先处理上传的文件
                         if uploaded_file:
                             with st.status("正在上传文件到 Google Drive...", expanded=True):
-                                file_link = upload_file_to_drive(uploaded_file)
-                                if file_link:
-                                    st.write(f"✅ 文件上传成功！")
-                                else:
-                                    st.error("文件上传失败，将只保存文字信息。")
+                                try:
+                                    final_link = upload_file_to_drive(uploaded_file)
+                                    if final_link:
+                                        st.write("✅ 文件上传成功！")
+                                    else:
+                                        st.error("文件上传失败，请尝试使用手动链接方式。")
+                                except Exception as e:
+                                    st.error(f"上传出错: {e}")
                         
-                        # 2. 写入表格
+                        # 如果没上传文件，但填了链接，则使用手动链接
+                        elif manual_link:
+                            final_link = manual_link
+                        
+                        # 写入表格
                         sheet = get_sheet_client()
                         if sheet:
-                            # 构造数据行，注意最后加了 file_link
-                            # 确保顺序: title, category, tags, rating, review, created_at, file_link
-                            row = [title, category, tags, rating, review, str(datetime.now()), file_link]
+                            # 构造数据行
+                            row = [title, category, tags, rating, review, str(datetime.now()), final_link]
                             sheet.append_row(row)
                             st.success(f"✅ 记录已保存: {title}")
                             st.rerun()
