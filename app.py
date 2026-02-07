@@ -11,19 +11,29 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1Rxp_7Ash8-B9hfwlci-DbSZ976y
 
 @st.cache_resource
 def init_connection():
-    # 尝试 1: 如果本地有 key.json，直接用 (本地模式)
+    # 🕵️‍♂️ 自动侦探模式：
+    # 1. 先看看是不是直接粘贴了 JSON (没有 google_key 的情况)
+    if "type" in st.secrets and st.secrets["type"] == "service_account":
+        return gspread.service_account_from_dict(st.secrets)
+
+    # 2. 如果不是，再看看是不是用的 google_key 格式
+    if "google_key" in st.secrets:
+        # 情况 A: 它是字符串 (被 """ 包裹了)
+        if isinstance(st.secrets["google_key"], str):
+            try:
+                key_dict = json.loads(st.secrets["google_key"])
+                return gspread.service_account_from_dict(key_dict)
+            except:
+                pass
+        # 情况 B: 它已经被自动识别为对象
+        elif isinstance(st.secrets["google_key"], dict):
+            return gspread.service_account_from_dict(st.secrets["google_key"])
+            
+    # 3. 最后尝试本地文件
     try:
         return gspread.service_account(filename='key.json')
     except:
-        pass
-    
-    # 尝试 2: 如果本地没有，尝试从 Streamlit Secrets 读取 (云端模式)
-    # 我们稍后会在云端后台填入这个 google_key
-    try:
-        key_dict = json.loads(st.secrets["google_key"])
-        return gspread.service_account_from_dict(key_dict)
-    except Exception as e:
-        st.error(f"无法加载密钥，请检查配置。错误: {e}")
+        st.error("无法连接：请在 Secrets 里填入密钥")
         return None
 
 def get_data():
@@ -80,7 +90,7 @@ def main():
         else:
             st.info("表格是空的")
     except Exception as e:
-        st.error(f"连接失败: {e}")
+        st.error(f"连接错误: {e}")
 
 if __name__ == "__main__":
     main()
