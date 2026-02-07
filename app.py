@@ -138,8 +138,7 @@ def main():
             if rating >= 8.0:
                 st.markdown("---")
                 st.info("🌟 **高分作品判定！** 可以上传资源文件 (Zip/PDF/Audio/图片)")
-                uploaded_file = st.file_uploader("选择文件上传 (将保存到 Google Drive)", 
-                                               type=['zip', 'pdf', 'mp3', 'wav', 'jpg', 'png', 'txt'])
+                uploaded_file = st.file_uploader("选择文件上传 (将保存到 Google Drive)")
 
             submitted = st.form_submit_button("保存到云端")
             
