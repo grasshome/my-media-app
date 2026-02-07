@@ -125,7 +125,7 @@ def main():
             with col1:
                 title = st.text_input("标题/番号")
             with col2:
-                category = st.selectbox("分类", ["小说", "ASMR", "AV", "同人本", "动画", "漫画", "PDF文档"])
+                category = st.selectbox("分类", ["刘备", "本子", "网黄", "AV", "ASMR", "COS", "L2D", "VAM"])
             
             # 评分滑块
             rating = st.slider("评分", 0.0, 10.0, 7.5, 0.5)
